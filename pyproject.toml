@@ -1,0 +1,14 @@
+[project]
+name = "cybershield"
+version = "1.0.0"
+description = "CyberShield Security Platform"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn>=0.34",
+    "python-multipart>=0.0.20",
+    "psutil>=6.0"
+]
+
+[tool.vercel]
+entrypoint = "server.main:app"

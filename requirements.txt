@@ -1,0 +1,9 @@
+fastapi>=0.115
+uvicorn>=0.34
+pytest>=8
+python-multipart>=0.0.20
+psutil>=6.0
+
+# Note: PySide6 removed from server dependencies so Vercel build won't require
+# desktop UI packages. Keep psutil if runtime endpoints need it; imports that
+# use psutil are delayed to request-time to avoid import-time crashes.
