@@ -124,3 +124,60 @@ dist\CyberShield.exe
 ```
 
 Build one-file rejimida ishlaydi. Security engine natijalari evidence-first va deterministic formatda qaytariladi; AI matnni bezashi mumkin, ammo tasdiqlanmagan threat/verdictni o'ylab topmasligi kerak.
+
+## GitHub + Vercel deployment
+
+This repository has one canonical desktop entrypoint: `python -m app.main`.
+The old `server.main` Vercel entrypoint has been removed. Vercel now uses the
+native Python function `api/index.py` as a small FastAPI health/version API; it
+does not try to run the Windows PySide6 desktop application. Vercel's current
+Python runtime supports Python 3.12+ and reads the root `pyproject.toml` for
+API dependencies.
+
+Runtime database/log/quarantine/sample files are intentionally excluded from
+Git so an old local state cannot overwrite a newer release when the repository
+is deployed or cloned.
+
+### Recommended update flow
+
+1. Replace the repository contents with this release and commit the deletion of old files.
+2. Push the commit to GitHub.
+3. In Vercel, keep the project connected to that same GitHub repository.
+4. Redeploy the latest commit. Do not keep an older Vercel project/root directory pointing at `server.main`.
+
+## GitHub — one-command publish
+
+This project includes `PUBLISH_TO_GITHUB.bat`.
+
+From Windows CMD:
+
+```bat
+PUBLISH_TO_GITHUB.bat https://github.com/mu7alovicloud-source/CyberShield
+```
+
+If the repository already exists, the script sets `origin`, commits changes, pushes `main`, and verifies the remote branch.
+
+If the repository does not exist, install GitHub CLI and authenticate once:
+
+```bat
+gh auth login
+```
+
+Then run the publisher again. The script never uploads `.env`, local databases, caches, `build/`, `dist/`, or other ignored local artifacts.
+
+> The GitHub account must have permission to create/push to the target repository.
+
+### Interactive GitHub publish
+
+Use:
+
+```text
+```
+
+CIBER will ask:
+
+```text
+GitHub link › https://github.com/OWNER/REPOSITORY
+```
+
+The entered repository URL is validated, configured as `origin`, pushed to `main`, and verified remotely. No repository URL is hard-coded.

@@ -26,6 +26,7 @@ from app.ai.web_intelligence import WebIntelligence
 from app.security.remediation import remediate_file
 from app.security.containment_engine import contain_if_safe
 from app.ai.agent_tools import SecurityToolRegistry, investigation_tools_for
+from app.ai.desktop_actions import execute_desktop_request, DesktopActionResult
 from app.ai.investigation_agent import DefensiveInvestigationAgent
 from app.ai.reasoning_orchestrator import SecurityReasoningOrchestrator
 from app.ai.intelligence_core import SecurityAICore
@@ -62,6 +63,7 @@ class CopilotEngine:
     FOLLOW_RE = re.compile(r"^(nega|nima uchun|nima sabab|tushuntir|tushuntirib ber|batafsil|qisqa|yana|shuni|uni|bu|u|oldingi|oldingisini|qanday|qanaqa|qanaqangi|nima|nimaga|nega bu|why|how|how come|explain|more|short|brief|that|this|previous|what|which|почему|зачем|объясни|подробнее|короче|это|этот|предыдущий|как|что)\b", re.I)
 
     def __init__(self):
+        self.desktop_controller = None
         self.history: deque[dict[str, Any]] = deque(maxlen=40)
         self.llm = LLMProvider()
         self.web = WebResearch(timeout=6.0, max_results=5)
@@ -90,8 +92,22 @@ class CopilotEngine:
             "process": self._process, "network": self._network, "help": self._help,
             "status": self._status, "investigate": self._investigate, "greeting": self._greeting, "identity": self._identity,
             "thanks": self._thanks, "knowledge": self._knowledge, "compare": self._compare,
-            "capabilities": self._capabilities, "review": self._review, "remediate": self._remediate, "general": self._general,
+            "capabilities": self._capabilities, "desktop_action": self._desktop_action_intent, "review": self._review, "remediate": self._remediate, "general": self._general,
         }
+
+    def set_desktop_controller(self, controller) -> None:
+        """Attach the live Qt desktop controller; actions remain allowlisted."""
+        self.desktop_controller = controller
+
+    def _desktop_action(self, i: CopilotIntent, result: DesktopActionResult) -> CopilotResponse:
+        tone = "Bajarildi" if result.ok else "Bajarilmadi"
+        return CopilotResponse(
+            "CyberShield Desktop AI",
+            f"<b>{tone}</b><br>{result.message}",
+            i,
+            actions=["DESKTOP_ACTION" if result.ok else "OBSERVE"],
+            warnings=[] if result.ok else ["Desktop action policy prevented or rejected the request."],
+        )
 
     def classify(self, text: str) -> CopilotIntent:
         q = (text or "").strip()
@@ -99,6 +115,10 @@ class CopilotEngine:
         language = self._language(low)
         urls = self.URL_RE.findall(q)
         path = self._extract_path(q)
+
+        desktop_request = execute_desktop_request(None, q)
+        if desktop_request is not None:
+            return CopilotIntent("desktop_action", .995, language=language, entities={"desktop_text": q})
 
         if self._greeting_re(low): return CopilotIntent("greeting", .99, language=language)
         if self._thanks_re(low): return CopilotIntent("thanks", .99, language=language)
@@ -384,6 +404,13 @@ class CopilotEngine:
 
     @staticmethod
     def _t(uz, en, ru, lang): return {"uz": uz, "en": en, "ru": ru}.get(lang, uz)
+
+    def _desktop_action_intent(self, i):
+        text = str(i.entities.get("desktop_text") or "")
+        result = execute_desktop_request(self.desktop_controller, text)
+        if result is None:
+            return CopilotResponse("CyberShield Desktop AI", "Desktop buyrug‘i aniqlanmadi.", i)
+        return self._desktop_action(i, result)
 
     def _greeting(self, i):
         return CopilotResponse("CyberShield AI", self._t(

@@ -21,18 +21,18 @@ def start_desktop() -> int:
     return _run("app.main")
 
 
-def start_background() -> int:
-    print("[CyberShield] Starting background protection service...")
-    return _run("background_service")
+def start_terminal(*args: str) -> int:
+    # Keep the CLI independent from the optional Qt desktop dependency.
+    return subprocess.call([sys.executable, str(ROOT / "main.py"), "terminal", *args], cwd=str(ROOT))
 
 
-MODES = {"desktop": start_desktop, "background": start_background}
+MODES = {"desktop": start_desktop, "terminal": start_terminal, "security-terminal": start_terminal}
 
 
 if __name__ == "__main__":
     mode = (sys.argv[1] if len(sys.argv) > 1 else "desktop").strip().lower()
     fn = MODES.get(mode)
     if fn is None:
-        print("Usage: python launch_cybershield.py [desktop|background]")
+        print("Usage: python launch_cybershield.py [desktop|terminal]")
         raise SystemExit(2)
     raise SystemExit(fn())
