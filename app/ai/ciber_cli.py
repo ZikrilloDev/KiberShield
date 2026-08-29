@@ -399,80 +399,48 @@ def _session_frame() -> list[str]:
         f"                                      {CYAN}AI ENGINE: ONLINE{RESET}",
     ]
 
-def animate_start(duration: float = 2.8) -> None:
-    """Run the full CyberShield boot animation once, then release the console.
-
-    The animation is intentionally self-contained.  It owns the screen only
-    during startup and leaves a clean prompt area afterwards, so subsequent
-    command input/output scrolls normally in Windows CMD.
-    """
+def animate_start(duration: float = 1.0) -> None:
+    """Fast startup: short visual boot, then hand control to live session animation."""
     if not _ansi_supported():
-        # ANSI-free fallback keeps the same information without escape codes.
-        print()
-        print("CYBERSHIELD CIBER  • secure startup • AI DEFENSE CORE")
-        print("────────────────────────────────────────────────────────────────")
-        print("● ONLINE   DEFENSIVE OPERATOR MODE   AI ENGINE: ONLINE")
-        print()
-        shield = [
-            "             ▄▀▀▀▀▀",
-            "           ▀▀▀▀▀▀▀▀▀▀",
-            "          ▀▀▀▀▀▀▀▀▀▀▀▀",
-            "          ▀▀▀▀▀▀▀▀▀▀▀▀▀",
-            "           ▀▀▀▀▀▀▀▀▀▀▀",
-            "             ▀▀▀▀▀▀▀",
-        ]
-        print("\n".join(shield))
-        print()
-        print("STARTUP  core → drivers → integrity → AI → realtime guard → operator")
-        print("████████████████████████████████████████████████████████████████  100%")
-        print("READY  Commands scroll normally below this line.")
-        print("────────────────────────────────────────────────────────────────")
+        print("\nCYBERSHIELD CIBER — AI SECURITY & DEVELOPMENT TERMINAL")
+        print("AI operator ready. Type `help` for commands; `exit` to leave.\n")
         return
 
-    # Build a stable full-screen dashboard like the original CIBER startup:
-    # shield in the center, system status + command capability panels, and a
-    # real progress bar.  Every frame has the same dimensions.
-    total = max(24, int(max(2.0, duration) / 0.055))
-    width, height = 34, 20
+    # Fast boot uses cached frames and never blocks for long.
+    frames = _prepare_animation_frames(28, 12, step=12)
+    total = max(1, int(max(0.8, duration) / 0.045))
     first = True
     try:
         for i in range(total):
-            progress = int(100 * (i + 1) / total)
-            phase = i
-            angle = (i * 14) % 360
-            pixels = _icon_pixels(width, height, angle)
-            icon_lines = (
-                _logo_frame(pixels, phase, crisp=True).splitlines()
-                if pixels else [
-                    "              ◈  CYBERSHIELD  ◈",
-                ]
-            )
-
-            frame = _startup_dashboard(phase, progress, icon_lines)
-            _paint_frame(frame, first=first)
+            angle = int(i * 360 / total) % 360
+            pixels = _icon_pixels(28, 12, angle)
+            icon_lines = _logo_frame(pixels, i, crisp=True).splitlines() if pixels else []
+            width = len(re.sub(r"\x1b\[[0-9;]*m", "", _session_frame()[0]))
+            out = _session_frame()
+            out += [""]
+            # Keep the hero centered and intentionally occupy about half the terminal height.
+            for line in icon_lines:
+                pad = max(0, (width - len(line)) // 2)
+                out.append(" " * pad + line)
+            out += [
+                "",
+                f"{CYAN}STARTUP{RESET}  core → integrity → AI → realtime guard → operator",
+                f"{BLUE}{'█' * int(76 * (i + 1) / total)}{GRAY}{'░' * (76 - int(76 * (i + 1) / total))}{RESET}  {CYAN}{int(100*(i+1)/total):3d}%{RESET}",
+                f"{DIM}Natural language → verified CyberShield actions • security • diagnostics • forensics{RESET}",
+                f"{GRAY}{'─' * width}{RESET}",
+            ]
+            _paint_frame(out, first=first)
             first = False
-
-            # Give each boot stage a recognizable transition without making
-            # startup painfully slow.
-            time.sleep(0.055)
+            time.sleep(0.045)
     finally:
-        # Critical: remove the animation completely before handing the console
-        # to input().  No background animation survives this point.
+        # Leave the static shell header; the persistent animator takes over.
         with _TERMINAL_WRITE_LOCK:
             sys.stdout.write("\x1b[2J\x1b[H")
+            for row in _session_frame():
+                sys.stdout.write(row + "\n")
+            sys.stdout.write("\n")
             sys.stdout.flush()
 
-    # Clean, static hand-off header.  Input begins on the next line.
-    width = min(104, max(72, shutil.get_terminal_size((104, 30)).columns - 2))
-    print(f"{CYAN}{BOLD}CYBERSHIELD CIBER{RESET}  {DIM}• secure startup • AI DEFENSE CORE{RESET}")
-    print(f"{GRAY}{'─' * width}{RESET}")
-    print(
-        f"{GREEN}● ONLINE{RESET}   {DIM}DEFENSIVE OPERATOR MODE{RESET}"
-        f"   {CYAN}AI ENGINE: ONLINE{RESET}"
-    )
-    print(f"{GREEN}READY{RESET}  {DIM}Commands scroll normally below this line. Type `help` or `commands`.{RESET}")
-    print(f"{GRAY}{'─' * width}{RESET}")
-    print()
 
 def thinking_animation(label: str = "CIBER is working", duration: float = 0.65) -> None:
     """Animated CyberShield spinner for a known duration."""
@@ -492,26 +460,45 @@ def thinking_animation(label: str = "CIBER is working", duration: float = 0.65) 
 
 
 def live_thinking(label: str, stop_event, started: float | None = None) -> None:
-    """Show a one-line activity indicator without repainting command history."""
-    if not _ansi_supported():
-        while not stop_event.wait(0.20):
+    """Persistent fixed-area rotating shield while a command is running.
+
+    The icon remains visible continuously. Frames are repainted over the same
+    reserved lines instead of clearing the terminal, preventing flicker,
+    disappearing frames and CMD layout corruption.
+    """
+    ansi = _ansi_supported()
+    if not ansi:
+        print(f"[CIBER] {label}...")
+        while not stop_event.wait(0.25):
             pass
         return
 
-    frames = ("◐", "◓", "◑", "◒")
-    i = 0
-    # One reserved line only.  Never move the cursor upward and never clear
-    # previously printed command output.
-    while not stop_event.is_set():
-        elapsed = f" {time.monotonic() - started:4.1f}s" if started else ""
-        text = f"  {CYAN}{frames[i % len(frames)]}{RESET} {label}{DIM}{elapsed}{RESET}"
-        sys.stdout.write("\r\x1b[2K" + text)
-        sys.stdout.flush()
-        i += 1
-        stop_event.wait(0.10)
+    # Keep live work animation to roughly half the console height.
+    width, height = 28, 12
+    phase = 0
+    first = True
+    previous_lines = height // 2 + 2
 
-    sys.stdout.write("\r\x1b[2K")
-    sys.stdout.flush()
+    while not stop_event.is_set():
+        pixels = _icon_pixels(width, height, angle=(phase * 8.0) % 360.0)
+        icon_lines = _logo_frame(pixels, phase).splitlines() if pixels else [f"{CYAN}◈{RESET}"]
+        elapsed = f"{time.monotonic() - started:5.1f}s" if started else ""
+        frame = icon_lines + [f"  {CYAN}{label}{RESET}{DIM}{elapsed}{RESET}"]
+
+        if not first:
+            sys.stdout.write(f"\x1b[{previous_lines}F")
+        # Erase exactly the old frame area; do not clear the whole terminal.
+        sys.stdout.write("\x1b[0J" + "\n".join(frame) + "\n")
+        sys.stdout.flush()
+        previous_lines = len(frame)
+        first = False
+        phase += 1
+        stop_event.wait(0.08)
+
+    if not first:
+        sys.stdout.write(f"\x1b[{previous_lines}F\x1b[0J")
+        sys.stdout.flush()
+
 
 def ciber_prompt() -> str:
     """Return a compact Claude-like prompt with the current project context."""

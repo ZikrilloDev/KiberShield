@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
 
 from app.ai.analyst import analyze_file_result
 from app.security.lab_controller import prepare_sample
+from app.security.sandbox_runner import launch_sandbox, sandbox_available
 from app.security.quarantine import quarantine_file
 from app.security.scanner import analyze_file
 from app.security.defender_scan import scan_file_with_defender
@@ -91,6 +92,10 @@ class Sandbox(QWidget):
         self.lab.setEnabled(False)
         self.lab.clicked.connect(self.lab_check)
         actions.addWidget(self.lab)
+        self.run_safe = ActionButton("IZOLATSIYADA ISHGA TUSHIRISH", "sandbox")
+        self.run_safe.setEnabled(False)
+        self.run_safe.clicked.connect(self.run_isolated)
+        actions.addWidget(self.run_safe)
         self.q = ActionButton("KARANTIN", "quarantine")
         self.q.setEnabled(False)
         self.q.clicked.connect(self.quarantine)
@@ -307,6 +312,17 @@ class Sandbox(QWidget):
         self.status.setText("Sandbox • Analysis stopped safely • No sample execution occurred")
         self.out.setText(f"<h2 style='color:#ff7187'>TAHLIL XATOSI</h2><p>{escape(message)}</p><p style='color:#72bfff'>Safety state: host execution remained blocked.</p>")
         error(self, "LAB TAHLIL XATOSI", escape(message))
+
+    def run_isolated(self):
+        if not self.sample:
+            warning("Avval namuna tanlang.")
+            return
+        result = launch_sandbox(self.sample, network=False)
+        if result.get("ok"):
+            success("Namuna Windows Sandbox ichida ishga tushirildi. Hostga o'zgarish yozilmaydi; tarmoq o'chirilgan.")
+            self.live_result.body.setText("<b>ISOLATED RUN:</b> LAUNCHED<br>Network: DISABLED<br>Host sample mapping: READ-ONLY")
+        else:
+            warning(result.get("message", "Sandbox ishga tushmadi."))
 
     def lab_check(self):
         if not self.sample:

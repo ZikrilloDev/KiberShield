@@ -7,6 +7,7 @@ psutil>=6.0
 # Note: PySide6 removed from server dependencies so Vercel build won't require
 # desktop UI packages. Keep psutil if runtime endpoints need it; imports that
 # use psutil are delayed to request-time to avoid import-time crashes.
-
 Pillow>=10.4
+
+# Optional local malware signature engine used by deep-scan. If no wheel is available, CyberShield reports YARA as UNKNOWN rather than failing.
 yara-python>=4.5.0
