@@ -1,0 +1,752 @@
+{
+  "version": 1,
+  "count": 149,
+  "policy": "Security-focused only. No GitHub/Vercel/deployment commands. No duplicate command names.",
+  "commands": [
+    {
+      "name": "system.info",
+      "group": "system",
+      "description": "System OS/build, architecture and host information"
+    },
+    {
+      "name": "system.uptime",
+      "group": "system",
+      "description": "System uptime and boot time"
+    },
+    {
+      "name": "system.users",
+      "group": "system",
+      "description": "List local user accounts"
+    },
+    {
+      "name": "system.sessions",
+      "group": "system",
+      "description": "Show interactive logon sessions"
+    },
+    {
+      "name": "system.processes",
+      "group": "system",
+      "description": "List running processes with PID/path"
+    },
+    {
+      "name": "system.process",
+      "group": "system",
+      "description": "Inspect one process by PID"
+    },
+    {
+      "name": "system.services",
+      "group": "system",
+      "description": "List Windows services and startup state"
+    },
+    {
+      "name": "system.service",
+      "group": "system",
+      "description": "Inspect one Windows service"
+    },
+    {
+      "name": "system.drivers",
+      "group": "system",
+      "description": "List loaded kernel drivers"
+    },
+    {
+      "name": "system.startup",
+      "group": "system",
+      "description": "Inspect common Windows startup locations"
+    },
+    {
+      "name": "system.scheduled",
+      "group": "system",
+      "description": "List scheduled tasks"
+    },
+    {
+      "name": "system.task",
+      "group": "system",
+      "description": "Inspect a scheduled task"
+    },
+    {
+      "name": "system.environment",
+      "group": "system",
+      "description": "Inspect non-secret environment metadata"
+    },
+    {
+      "name": "system.hotfixes",
+      "group": "system",
+      "description": "List installed Windows updates/hotfixes"
+    },
+    {
+      "name": "system.defender",
+      "group": "system",
+      "description": "Show Microsoft Defender status"
+    },
+    {
+      "name": "system.firewall",
+      "group": "system",
+      "description": "Show Windows Firewall profiles"
+    },
+    {
+      "name": "system.network",
+      "group": "system",
+      "description": "Show network interfaces and addresses"
+    },
+    {
+      "name": "system.routes",
+      "group": "system",
+      "description": "Show routing table"
+    },
+    {
+      "name": "system.connections",
+      "group": "system",
+      "description": "Show active network connections"
+    },
+    {
+      "name": "system.dns",
+      "group": "system",
+      "description": "Show DNS configuration"
+    },
+    {
+      "name": "system.arp",
+      "group": "system",
+      "description": "Show ARP cache"
+    },
+    {
+      "name": "scan.file",
+      "group": "scan",
+      "description": "Deep scan one file without executing it"
+    },
+    {
+      "name": "scan.folder",
+      "group": "scan",
+      "description": "Deep scan a directory recursively"
+    },
+    {
+      "name": "scan.process",
+      "group": "scan",
+      "description": "Scan the executable backing a running process"
+    },
+    {
+      "name": "scan.startup",
+      "group": "scan",
+      "description": "Scan startup persistence targets"
+    },
+    {
+      "name": "scan.downloads",
+      "group": "scan",
+      "description": "Scan the user's Downloads directory"
+    },
+    {
+      "name": "scan.desktop",
+      "group": "scan",
+      "description": "Scan the user's Desktop directory"
+    },
+    {
+      "name": "scan.quarantine",
+      "group": "scan",
+      "description": "Review quarantine candidates"
+    },
+    {
+      "name": "scan.recent",
+      "group": "scan",
+      "description": "Scan recently modified executable/script files"
+    },
+    {
+      "name": "scan.hash",
+      "group": "scan",
+      "description": "Calculate SHA-256/SHA-1/MD5 hashes"
+    },
+    {
+      "name": "scan.signature",
+      "group": "scan",
+      "description": "Check Authenticode signature"
+    },
+    {
+      "name": "scan.pe",
+      "group": "scan",
+      "description": "Inspect PE headers, sections and anomalies"
+    },
+    {
+      "name": "scan.strings",
+      "group": "scan",
+      "description": "Extract and analyze suspicious strings"
+    },
+    {
+      "name": "scan.entropy",
+      "group": "scan",
+      "description": "Measure entropy/packing indicators"
+    },
+    {
+      "name": "scan.archive",
+      "group": "scan",
+      "description": "Inspect archive contents without executing members"
+    },
+    {
+      "name": "scan.script",
+      "group": "scan",
+      "description": "Inspect script indicators"
+    },
+    {
+      "name": "scan.office",
+      "group": "scan",
+      "description": "Inspect Office/PDF macro or active-content indicators"
+    },
+    {
+      "name": "scan.yara",
+      "group": "scan",
+      "description": "Run installed YARA rules if available"
+    },
+    {
+      "name": "scan.clamav",
+      "group": "scan",
+      "description": "Run ClamAV if available"
+    },
+    {
+      "name": "scan.defender",
+      "group": "scan",
+      "description": "Run Microsoft Defender custom scan"
+    },
+    {
+      "name": "scan.reputation",
+      "group": "scan",
+      "description": "Check hash reputation when configured"
+    },
+    {
+      "name": "scan.compare",
+      "group": "scan",
+      "description": "Compare file hash against a known-good baseline"
+    },
+    {
+      "name": "hunt.process_tree",
+      "group": "threat_hunting",
+      "description": "Build a parent/child process tree"
+    },
+    {
+      "name": "hunt.suspicious_processes",
+      "group": "threat_hunting",
+      "description": "Find unsigned/unusual processes"
+    },
+    {
+      "name": "hunt.unsigned",
+      "group": "threat_hunting",
+      "description": "Find unsigned executables and drivers"
+    },
+    {
+      "name": "hunt.temp_exec",
+      "group": "threat_hunting",
+      "description": "Find executables launched from temporary paths"
+    },
+    {
+      "name": "hunt.user_exec",
+      "group": "threat_hunting",
+      "description": "Find executable content in user-writable locations"
+    },
+    {
+      "name": "hunt.lolbins",
+      "group": "threat_hunting",
+      "description": "Find suspicious use of Windows utility binaries"
+    },
+    {
+      "name": "hunt.powershell",
+      "group": "threat_hunting",
+      "description": "Review PowerShell process/activity indicators"
+    },
+    {
+      "name": "hunt.wscript",
+      "group": "threat_hunting",
+      "description": "Review script-host process indicators"
+    },
+    {
+      "name": "hunt.rundll32",
+      "group": "threat_hunting",
+      "description": "Review rundll32 activity indicators"
+    },
+    {
+      "name": "hunt.regsvr32",
+      "group": "threat_hunting",
+      "description": "Review regsvr32 activity indicators"
+    },
+    {
+      "name": "hunt.mshta",
+      "group": "threat_hunting",
+      "description": "Review mshta activity indicators"
+    },
+    {
+      "name": "hunt.certutil",
+      "group": "threat_hunting",
+      "description": "Review certutil activity indicators"
+    },
+    {
+      "name": "hunt.bitsadmin",
+      "group": "threat_hunting",
+      "description": "Review BITS activity indicators"
+    },
+    {
+      "name": "hunt.wmic",
+      "group": "threat_hunting",
+      "description": "Review WMI process/activity indicators"
+    },
+    {
+      "name": "hunt.psexec",
+      "group": "threat_hunting",
+      "description": "Review service/process indicators associated with remote execution"
+    },
+    {
+      "name": "hunt.persistence",
+      "group": "threat_hunting",
+      "description": "Correlate common persistence locations"
+    },
+    {
+      "name": "hunt.encoded",
+      "group": "threat_hunting",
+      "description": "Find suspicious encoded command-line indicators"
+    },
+    {
+      "name": "hunt.lolbin_paths",
+      "group": "threat_hunting",
+      "description": "Inspect LOLBin paths and signatures"
+    },
+    {
+      "name": "hunt.network_process",
+      "group": "threat_hunting",
+      "description": "Map processes to network connections"
+    },
+    {
+      "name": "hunt.listening",
+      "group": "threat_hunting",
+      "description": "Identify listening processes"
+    },
+    {
+      "name": "hunt.outbound",
+      "group": "threat_hunting",
+      "description": "Identify active outbound connections"
+    },
+    {
+      "name": "net.adapters",
+      "group": "network",
+      "description": "Detailed adapter information"
+    },
+    {
+      "name": "net.ipconfig",
+      "group": "network",
+      "description": "IP configuration and DNS details"
+    },
+    {
+      "name": "net.connections",
+      "group": "network",
+      "description": "Current TCP/UDP connections"
+    },
+    {
+      "name": "net.listening",
+      "group": "network",
+      "description": "Listening TCP/UDP endpoints"
+    },
+    {
+      "name": "net.dns_cache",
+      "group": "network",
+      "description": "Inspect DNS client cache"
+    },
+    {
+      "name": "net.dns_test",
+      "group": "network",
+      "description": "Resolve and test a domain safely"
+    },
+    {
+      "name": "net.route",
+      "group": "network",
+      "description": "Routing table"
+    },
+    {
+      "name": "net.arp",
+      "group": "network",
+      "description": "ARP neighbors"
+    },
+    {
+      "name": "net.proxy",
+      "group": "network",
+      "description": "Inspect Windows proxy configuration"
+    },
+    {
+      "name": "net.firewall",
+      "group": "network",
+      "description": "Firewall profile/state overview"
+    },
+    {
+      "name": "net.firewall_rules",
+      "group": "network",
+      "description": "List relevant firewall rules"
+    },
+    {
+      "name": "net.public_ip",
+      "group": "network",
+      "description": "Show configured public-IP lookup only when network access is allowed"
+    },
+    {
+      "name": "net.port_check",
+      "group": "network",
+      "description": "Check a specified host/port for connectivity"
+    },
+    {
+      "name": "net.domain_info",
+      "group": "network",
+      "description": "Resolve domain records"
+    },
+    {
+      "name": "net.tls",
+      "group": "network",
+      "description": "Inspect TLS certificate metadata for a URL"
+    },
+    {
+      "name": "net.url_scan",
+      "group": "network",
+      "description": "Static URL/phishing-indicator analysis"
+    },
+    {
+      "name": "net.phishing",
+      "group": "network",
+      "description": "Analyze a URL for phishing indicators"
+    },
+    {
+      "name": "net.blocklist",
+      "group": "network",
+      "description": "Check configured local/domain blocklists"
+    },
+    {
+      "name": "net.reset_dns",
+      "group": "network",
+      "description": "Flush the local DNS resolver cache"
+    },
+    {
+      "name": "forensic.timeline",
+      "group": "forensics",
+      "description": "Create a file activity timeline"
+    },
+    {
+      "name": "forensic.recent_files",
+      "group": "forensics",
+      "description": "List recently changed files"
+    },
+    {
+      "name": "forensic.prefetch",
+      "group": "forensics",
+      "description": "Inspect Windows Prefetch metadata when available"
+    },
+    {
+      "name": "forensic.amcache",
+      "group": "forensics",
+      "description": "Inspect Amcache metadata when permitted"
+    },
+    {
+      "name": "forensic.usn",
+      "group": "forensics",
+      "description": "Inspect USN journal metadata when permitted"
+    },
+    {
+      "name": "forensic.eventlog",
+      "group": "forensics",
+      "description": "Query security-relevant Windows event logs"
+    },
+    {
+      "name": "forensic.logon",
+      "group": "forensics",
+      "description": "Review recent logon events"
+    },
+    {
+      "name": "forensic.defender_log",
+      "group": "forensics",
+      "description": "Review Defender operational events"
+    },
+    {
+      "name": "forensic.task_history",
+      "group": "forensics",
+      "description": "Review scheduled-task operational history"
+    },
+    {
+      "name": "forensic.service_events",
+      "group": "forensics",
+      "description": "Review service creation/start events"
+    },
+    {
+      "name": "forensic.network_events",
+      "group": "forensics",
+      "description": "Review relevant network events"
+    },
+    {
+      "name": "forensic.browser_artifacts",
+      "group": "forensics",
+      "description": "Inspect supported browser security artifacts"
+    },
+    {
+      "name": "forensic.downloads",
+      "group": "forensics",
+      "description": "Correlate downloaded files with timestamps"
+    },
+    {
+      "name": "forensic.hash_report",
+      "group": "forensics",
+      "description": "Generate forensic hash report"
+    },
+    {
+      "name": "forensic.case_export",
+      "group": "forensics",
+      "description": "Export a case report"
+    },
+    {
+      "name": "forensic.ioc_extract",
+      "group": "forensics",
+      "description": "Extract hashes/domains/IPs from evidence"
+    },
+    {
+      "name": "forensic.ioc_search",
+      "group": "forensics",
+      "description": "Search evidence for a supplied IOC"
+    },
+    {
+      "name": "forensic.baseline",
+      "group": "forensics",
+      "description": "Create a system security baseline"
+    },
+    {
+      "name": "forensic.diff",
+      "group": "forensics",
+      "description": "Compare current state to a saved baseline"
+    },
+    {
+      "name": "hardening.defender",
+      "group": "hardening",
+      "description": "Verify Defender protections"
+    },
+    {
+      "name": "hardening.realtime",
+      "group": "hardening",
+      "description": "Verify real-time protection state"
+    },
+    {
+      "name": "hardening.firewall",
+      "group": "hardening",
+      "description": "Verify firewall state"
+    },
+    {
+      "name": "hardening.uac",
+      "group": "hardening",
+      "description": "Inspect UAC configuration"
+    },
+    {
+      "name": "hardening.smb",
+      "group": "hardening",
+      "description": "Inspect SMB security configuration"
+    },
+    {
+      "name": "hardening.rdp",
+      "group": "hardening",
+      "description": "Inspect RDP exposure/configuration"
+    },
+    {
+      "name": "hardening.remote_services",
+      "group": "hardening",
+      "description": "Audit remote-service exposure"
+    },
+    {
+      "name": "hardening.autorun",
+      "group": "hardening",
+      "description": "Audit autorun locations"
+    },
+    {
+      "name": "hardening.admins",
+      "group": "hardening",
+      "description": "Audit local administrators"
+    },
+    {
+      "name": "hardening.guest",
+      "group": "hardening",
+      "description": "Audit guest account state"
+    },
+    {
+      "name": "hardening.password_policy",
+      "group": "hardening",
+      "description": "Inspect local password policy"
+    },
+    {
+      "name": "hardening.audit_policy",
+      "group": "hardening",
+      "description": "Inspect Windows audit policy"
+    },
+    {
+      "name": "hardening.bitlocker",
+      "group": "hardening",
+      "description": "Inspect BitLocker status"
+    },
+    {
+      "name": "hardening.secureboot",
+      "group": "hardening",
+      "description": "Inspect Secure Boot state"
+    },
+    {
+      "name": "hardening.tpm",
+      "group": "hardening",
+      "description": "Inspect TPM state"
+    },
+    {
+      "name": "hardening.updates",
+      "group": "hardening",
+      "description": "Check update state"
+    },
+    {
+      "name": "hardening.smart_app_control",
+      "group": "hardening",
+      "description": "Inspect Smart App Control state when available"
+    },
+    {
+      "name": "hardening.exploit_protection",
+      "group": "hardening",
+      "description": "Inspect exploit protection settings"
+    },
+    {
+      "name": "hardening.attack_surface",
+      "group": "hardening",
+      "description": "Audit selected attack-surface settings"
+    },
+    {
+      "name": "response.isolate_file",
+      "group": "response",
+      "description": "Move a suspicious file to protected quarantine"
+    },
+    {
+      "name": "response.restore_file",
+      "group": "response",
+      "description": "Restore a quarantined file after explicit confirmation"
+    },
+    {
+      "name": "response.hash",
+      "group": "response",
+      "description": "Generate evidence hashes before response"
+    },
+    {
+      "name": "response.collect",
+      "group": "response",
+      "description": "Collect safe forensic metadata"
+    },
+    {
+      "name": "response.kill_process",
+      "group": "response",
+      "description": "Terminate a selected suspicious process after confirmation"
+    },
+    {
+      "name": "response.disable_task",
+      "group": "response",
+      "description": "Disable a selected suspicious scheduled task after confirmation"
+    },
+    {
+      "name": "response.stop_service",
+      "group": "response",
+      "description": "Stop a selected suspicious service after confirmation"
+    },
+    {
+      "name": "response.block_domain",
+      "group": "response",
+      "description": "Add a domain to CyberShield's local blocklist"
+    },
+    {
+      "name": "response.unblock_domain",
+      "group": "response",
+      "description": "Remove a domain from the local blocklist"
+    },
+    {
+      "name": "response.block_hash",
+      "group": "response",
+      "description": "Add a hash to CyberShield's local denylist"
+    },
+    {
+      "name": "response.allow_hash",
+      "group": "response",
+      "description": "Remove a hash from the local denylist"
+    },
+    {
+      "name": "response.snapshot",
+      "group": "response",
+      "description": "Create a security-state snapshot"
+    },
+    {
+      "name": "response.rollback",
+      "group": "response",
+      "description": "Restore CyberShield-managed changes from a snapshot"
+    },
+    {
+      "name": "response.report",
+      "group": "response",
+      "description": "Generate a security incident report"
+    },
+    {
+      "name": "diag.health",
+      "group": "diagnostics",
+      "description": "CyberShield engine health"
+    },
+    {
+      "name": "diag.engines",
+      "group": "diagnostics",
+      "description": "Show available scan engines"
+    },
+    {
+      "name": "diag.permissions",
+      "group": "diagnostics",
+      "description": "Check required Windows permissions"
+    },
+    {
+      "name": "diag.dependencies",
+      "group": "diagnostics",
+      "description": "Check optional scanner dependencies"
+    },
+    {
+      "name": "diag.performance",
+      "group": "diagnostics",
+      "description": "Measure scanner performance"
+    },
+    {
+      "name": "diag.disk",
+      "group": "diagnostics",
+      "description": "Check available disk space"
+    },
+    {
+      "name": "diag.memory",
+      "group": "diagnostics",
+      "description": "Check memory pressure"
+    },
+    {
+      "name": "diag.cpu",
+      "group": "diagnostics",
+      "description": "Check CPU pressure"
+    },
+    {
+      "name": "diag.locked_files",
+      "group": "diagnostics",
+      "description": "Find files currently locked by another process"
+    },
+    {
+      "name": "diag.path",
+      "group": "diagnostics",
+      "description": "Validate a scan path"
+    },
+    {
+      "name": "diag.config",
+      "group": "diagnostics",
+      "description": "Validate CyberShield configuration"
+    },
+    {
+      "name": "diag.rules",
+      "group": "diagnostics",
+      "description": "Validate installed YARA/rule packs"
+    },
+    {
+      "name": "diag.logs",
+      "group": "diagnostics",
+      "description": "Review CyberShield logs"
+    },
+    {
+      "name": "diag.errors",
+      "group": "diagnostics",
+      "description": "Show recent CyberShield errors"
+    },
+    {
+      "name": "diag.selftest",
+      "group": "diagnostics",
+      "description": "Run CyberShield self-test"
+    }
+  ]
+}

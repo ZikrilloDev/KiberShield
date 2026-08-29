@@ -7,3 +7,6 @@ psutil>=6.0
 # Note: PySide6 removed from server dependencies so Vercel build won't require
 # desktop UI packages. Keep psutil if runtime endpoints need it; imports that
 # use psutil are delayed to request-time to avoid import-time crashes.
+
+Pillow>=10.4
+yara-python>=4.5.0
