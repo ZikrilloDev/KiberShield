@@ -37,12 +37,3 @@ def get_processes(limit=100):
             continue
     rows.sort(key=lambda x: x["cpu"], reverse=True)
     return rows[:limit]
-
-
-class ProcessMonitor:
-    """Small compatibility facade over the read-only process telemetry API."""
-    def snapshot(self, limit=100):
-        return get_processes(limit)
-
-    def get_processes(self, limit=100):
-        return get_processes(limit)

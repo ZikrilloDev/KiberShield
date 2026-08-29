@@ -19,7 +19,6 @@ from app.security.authenticode import verify_signature
 from app.security.defender_scan import scan_file_with_defender
 from app.security.hybrid_intel import virus_total_hash, virus_total_url
 from app.security.phishing_guard import analyze_url as local_url_analysis
-from app.security.malware_engines import yara_scan_file, engine_status as malware_engine_status
 
 
 def _clamav_file(path: Path, timeout: int = 90) -> dict[str, Any]:
@@ -28,7 +27,7 @@ def _clamav_file(path: Path, timeout: int = 90) -> dict[str, Any]:
         return {"available": False, "status": "UNAVAILABLE"}
     try:
         cp = subprocess.run(
-            [exe, "--no-summary", str(path)],
+            [exe, "--no-summary", "--stdout", str(path)],
             capture_output=True, text=True, timeout=timeout, shell=False,
             stdin=subprocess.DEVNULL,
             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
@@ -49,17 +48,14 @@ def _file_score(static: dict[str, Any], signature: dict[str, Any], defender: dic
     independent = 0
     threat_engines = 0
 
-    if defender.get("status") == "THREAT":
-        details = defender.get("threats") or defender.get("output") or "Microsoft Defender reported a threat"
-        evidence.append({"code": "DEFENDER_THREAT", "severity": "critical", "source": "Microsoft Defender", "detail": str(details)[:2000], "score": 100})
-        score = 100
-        threat_engines += 1
-        independent += 1
-    elif defender.get("status") == "THREAT_OR_ERROR":
-        # Legacy MpCmdRun fallback: non-zero is not proof of malware. Surface it
-        # as UNKNOWN evidence rather than falsely calling the file malicious.
+    if defender.get("status") == "THREAT_OR_ERROR" and defender.get("exit_code") not in (0, None):
         output = str(defender.get("output", ""))
-        evidence.append({"code": "DEFENDER_SCAN_ERROR", "severity": "medium", "source": "Microsoft Defender", "detail": output[-1500:] or "Defender returned a non-zero scan result", "score": 5})
+        code = int(defender.get("exit_code") or -1)
+        confirmed = code == 2 or any(x in output.lower() for x in ("threat", "detected", "malware", "found"))
+        evidence.append({"code": "DEFENDER_RESULT", "severity": "critical" if confirmed else "medium", "source": "Microsoft Defender", "detail": output[-1500:], "score": 88 if confirmed else 8})
+        if confirmed:
+            threat_engines += 1
+            independent += 1
     if clam.get("status") == "THREAT":
         evidence.append({"code": "CLAMAV_THREAT", "severity": "critical", "source": "ClamAV", "detail": clam.get("output", "")[-1000:], "score": 90})
         score = max(score, 95); threat_engines += 1; independent += 1
@@ -95,46 +91,20 @@ def _file_score(static: dict[str, Any], signature: dict[str, Any], defender: dic
 
 
 def analyze_file_deep(path: str | Path, *, endpoint_scan: bool = True, reputation: bool = True) -> dict[str, Any]:
-    """Run the strongest locally available non-executing file analysis stack.
-
-    The sample is never launched by CyberShield. Independent engines are:
-    static parser, YARA (when installed), Microsoft Defender, ClamAV,
-    Authenticode and VirusTotal hash reputation. Missing engines are reported
-    as UNKNOWN rather than being treated as clean.
-    """
     p = Path(path).expanduser().resolve()
     static = analyze_file(p)
     signature = verify_signature(p) if static.get("pe") else {"enabled": False, "status": "NOT_APPLICABLE"}
     defender = {"available": False, "status": "SKIPPED"}
-    if endpoint_scan:
-        # A real endpoint engine should see every requested file, not only PE
-        # files. Defender can inspect documents, archives and scripts too.
+    if endpoint_scan and (static.get("pe") or p.suffix.lower() in {".ps1", ".bat", ".cmd", ".vbs", ".js", ".jse", ".hta", ".msi", ".scr"} or static.get("risk", 0) >= 25):
         defender = scan_file_with_defender(p)
     vt = virus_total_hash(static.get("sha256", "")) if reputation else {"enabled": False, "status": "DISABLED", "malicious": False}
     clam = _clamav_file(p) if endpoint_scan else {"available": False, "status": "SKIPPED"}
-    yara = yara_scan_file(p) if endpoint_scan else {"available": False, "status": "SKIPPED"}
     score, confidence, verdict, evidence = _file_score(static, signature, defender, vt, clam)
-
-    if yara.get("status") == "THREAT":
-        evidence.append({"code": "YARA_THREAT", "severity": "high", "source": "CyberShield YARA",
-                         "detail": ", ".join(yara.get("matches", []))[:1500], "score": 70})
-        score = max(score, 85)
-        verdict = "MALICIOUS" if score >= 85 else verdict
-        confidence = min(.995, confidence + .08)
-
-    available = [
-        static.get("engines", {}).get("static", {}).get("status") if isinstance(static.get("engines"), dict) else "COMPLETED",
-        "Defender" if defender.get("available") else None,
-        "ClamAV" if clam.get("available") else None,
-        "YARA" if yara.get("available") else None,
-        "VirusTotal" if vt.get("enabled") else None,
-    ]
-    available = [x for x in available if x]
     return {
         **static,
-        "risk": min(100, score),
+        "risk": score,
         "verdict": verdict,
-        "confidence": round(confidence, 3),
+        "confidence": confidence,
         "evidence": evidence,
         "engines": {
             "static": {"status": "COMPLETED"},
@@ -142,16 +112,11 @@ def analyze_file_deep(path: str | Path, *, endpoint_scan: bool = True, reputatio
             "defender": defender,
             "virustotal_hash": vt,
             "clamav": clam,
-            "yara": yara,
-        },
-        "engine_summary": {
-            "available": available,
-            "count": len(available),
-            "external_detection": any(x in available for x in ("Defender", "ClamAV", "YARA", "VirusTotal")),
         },
         "execution_performed": False,
-        "engine_policy": "multi_engine_evidence_fusion_no_host_execution",
+        "engine_policy": "multi_engine_evidence_fusion",
     }
+
 
 def _dns_intel(host: str) -> dict[str, Any]:
     if not host:

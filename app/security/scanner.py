@@ -19,10 +19,8 @@ from collections import Counter
 from dataclasses import dataclass, asdict
 from pathlib import Path
 from typing import Iterable
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from app.security.hash_analyzer import sha256_file
-from app.security.enhanced_detection import file_name_signals
 
 EXECUTABLE_EXTENSIONS = {
     ".exe", ".dll", ".sys", ".scr", ".com", ".pif", ".cpl", ".ocx", ".drv", ".efi",
@@ -255,13 +253,6 @@ def analyze_file(path: str | Path) -> dict:
     if len(sample) >= 4096 and ent >= 7.2 and (is_pe or ext in EXECUTABLE_EXTENSIONS):
         evidence.append(Evidence("PACKED_CONTENT", "High entropy in executable content", f"{ent:.2f} bits/byte", 16, "medium", .82))
 
-    # Harmless EICAR antivirus self-test marker. This is a deterministic
-    # signature used to verify that the local detection pipeline is actually
-    # recognizing a known AV test sample; it is not malware.
-    if b"EICAR-STANDARD-ANTIVIRUS-TEST-FILE" in sample:
-        evidence.append(Evidence("EICAR_TEST", "EICAR antivirus test marker detected",
-                                 "Harmless standard AV self-test signature", 100, "critical", .999))
-
     lowered = sample.lower()
     if ext in SCRIPT_EXTENSIONS:
         evidence.extend(_script_heuristics(ext, lowered))
@@ -283,8 +274,6 @@ def analyze_file(path: str | Path) -> dict:
                 evidence.append(Evidence("PDF_ACTIVE", title, needle.decode("ascii", "ignore"), score, "medium", .84))
 
     evidence.extend(_archive_heuristics(p, ext))
-    for signal in file_name_signals(p):
-        evidence.append(Evidence(signal["code"], signal["reason"], signal["reason"], signal["score"], signal["severity"], .93))
     mismatch = _magic_mismatch(ext, sample)
     if mismatch:
         evidence.append(mismatch)
@@ -294,7 +283,7 @@ def analyze_file(path: str | Path) -> dict:
 
     # Plain text is not made suspicious by entropy, length, or executable extension absence.
     raw_score = sum(e.score for e in evidence)
-    if ext not in EXECUTABLE_EXTENSIONS and not is_pe and not any(e.severity == "critical" for e in evidence):
+    if ext not in EXECUTABLE_EXTENSIONS and not is_pe:
         raw_score = min(raw_score, 55)
     score = min(100, raw_score)
     strong = sum(e.severity in {"high", "critical"} for e in evidence)
@@ -330,37 +319,18 @@ def analyze_file(path: str | Path) -> dict:
     }
 
 
-def scan_directory(directory: str | Path, *, limit: int = 500, workers: int = 4) -> list[dict]:
-    """Bounded parallel static scan that keeps the UI responsive.
-
-    File contents are never executed. The file count and worker count are
-    capped so a huge tree cannot create unbounded background work.
-    """
+def scan_directory(directory: str | Path, *, limit: int = 500) -> list[dict]:
+    """Scan a directory statically with a bounded file count."""
     root = Path(directory).expanduser().resolve()
     if not root.is_dir():
         raise NotADirectoryError(str(root))
-    limit = max(1, min(int(limit), 5000))
-    workers = max(1, min(int(workers), 8))
-    paths: list[Path] = []
-    try:
-        for p in root.rglob("*"):
-            if len(paths) >= limit:
-                break
-            try:
-                if p.is_file():
-                    paths.append(p)
-            except OSError:
-                continue
-    except (OSError, PermissionError):
-        pass
-
     results: list[dict] = []
-    with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="CyberShieldScan") as pool:
-        futures = {pool.submit(analyze_file, p): p for p in paths}
-        for future in as_completed(futures):
+    for p in root.rglob("*"):
+        if len(results) >= limit:
+            break
+        if p.is_file():
             try:
-                results.append(future.result())
-            except (OSError, PermissionError, ValueError):
+                results.append(analyze_file(p))
+            except (OSError, PermissionError):
                 continue
-    results.sort(key=lambda row: (row.get("risk", 0), row.get("path", "")), reverse=True)
     return results

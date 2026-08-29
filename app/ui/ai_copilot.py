@@ -1,21 +1,21 @@
 from __future__ import annotations
 
 from html import escape
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QFileDialog, QFrame, QHBoxLayout, QGridLayout, QLabel, QLineEdit, QTextEdit, QVBoxLayout, QWidget, QPushButton, QTabWidget
 
 from app.ai.copilot_engine import CopilotEngine
+from app.ai.cybershield_terminal import CyberShieldTerminal
 from app.i18n import get_language
 from app.ui.widgets import ActionButton, MetricCard, StatusBadge
 
 
 class AICopilot(QWidget):
     """Unified CyberShield AI workspace: conversation + investigation + security context."""
-    def __init__(self, desktop_controller=None):
+    def __init__(self):
         super().__init__()
         self.engine = CopilotEngine()
-        if desktop_controller is not None:
-            self.engine.set_desktop_controller(desktop_controller)
+        self.terminal = CyberShieldTerminal(get_language())
         self.build()
         self.write_intro()
 
@@ -30,12 +30,6 @@ class AICopilot(QWidget):
         hero = QFrame(); hero.setObjectName("aiHero")
         hl = QHBoxLayout(hero); hl.setContentsMargins(16, 13, 16, 13); hl.setSpacing(14)
         orb = QLabel("✦"); orb.setObjectName("aiOrb"); hl.addWidget(orb, 0, Qt.AlignTop)
-        self._ai_orb = orb
-        self._orb_frames = ["✦", "✧", "✦", "✧"]
-        self._orb_index = 0
-        self._orb_timer = QTimer(self)
-        self._orb_timer.timeout.connect(self._animate_ai_orb)
-        self._orb_timer.start(220)
         hb = QVBoxLayout(); hb.setSpacing(2)
         h1 = QLabel("ADAPTIVE SECURITY BRAIN"); h1.setObjectName("aiHeroTitle"); hb.addWidget(h1)
         hs = QLabel("Reason • verify • explain • never invent evidence") ; hs.setObjectName("aiHeroSub"); hb.addWidget(hs)
@@ -78,6 +72,19 @@ class AICopilot(QWidget):
         self.chat = QTextEdit(); self.chat.setReadOnly(True); self.chat.setObjectName("aiChat"); ail.addWidget(self.chat, 1)
         self.tabs.addTab(ai_tab, "AI ANALYST")
 
+        terminal_tab = QWidget(); tl = QVBoxLayout(terminal_tab); tl.setContentsMargins(4, 4, 4, 4); tl.setSpacing(7)
+        th = QHBoxLayout(); th.addWidget(QLabel("CYBERSHIELD SECURITY TERMINAL", objectName="panelTitle")); th.addStretch()
+        th.addWidget(StatusBadge("SAFE COMMAND SET • NO SHELL", "safe")); tl.addLayout(th)
+        self.terminal_output = QTextEdit(); self.terminal_output.setReadOnly(True); self.terminal_output.setObjectName("aiChat")
+        self.terminal_output.setPlainText(self.terminal.help_text()); tl.addWidget(self.terminal_output, 1)
+        tr = QHBoxLayout(); tr.setSpacing(7)
+        self.terminal_input = QLineEdit(); self.terminal_input.setPlaceholderText("CyberShield> scan \"C:\\Downloads\\sample.exe\"  |  status  |  help"); self.terminal_input.returnPressed.connect(self.run_terminal); tr.addWidget(self.terminal_input, 1)
+        terminal_run = ActionButton("RUN", "monitor", True); terminal_run.clicked.connect(self.run_terminal); tr.addWidget(terminal_run)
+        terminal_clear = QPushButton("CLEAR"); terminal_clear.clicked.connect(lambda: self.terminal_output.clear()); tr.addWidget(terminal_clear)
+        tl.addLayout(tr)
+        note = QLabel("Terminal buyruqlari real CyberShield modullariga ulanadi: fayl skani, URL/fishing, Defender, jarayonlar, tarmoq, xizmatlar, vazifalar, karantin va diagnostika. Arbitrary CMD/PowerShell ishlatish bloklangan.")
+        note.setObjectName("pageSubtitle"); note.setWordWrap(True); tl.addWidget(note)
+        self.tabs.addTab(terminal_tab, "SECURITY TERMINAL")
         pl.addWidget(self.tabs, 1)
         root.addWidget(panel, 1)
 
@@ -93,15 +100,13 @@ class AICopilot(QWidget):
         self.context_label = QLabel("Context: conversation memory • live telemetry • terminal-style host inspection • evidence-first")
         self.context_label.setObjectName("pageSubtitle"); root.addWidget(self.context_label)
 
-    def _animate_ai_orb(self):
-        if not hasattr(self, "_ai_orb"):
-            return
-        self._orb_index = (self._orb_index + 1) % len(self._orb_frames)
-        self._ai_orb.setText(self._orb_frames[self._orb_index])
-
     def set_language(self, code: str):
+        self.terminal.set_language(code)
         if hasattr(self, "tabs"):
             self.tabs.setTabText(0, {"uz":"AI TAHLILCHI", "en":"AI ANALYST", "ru":"AI АНАЛИТИК"}.get(code, "AI ANALYST"))
+            self.tabs.setTabText(1, {"uz":"XAVFSIZLIK TERMINALI", "en":"SECURITY TERMINAL", "ru":"ТЕРМИНАЛ БЕЗОПАСНОСТИ"}.get(code, "SECURITY TERMINAL"))
+        if hasattr(self, "terminal_output") and not self.terminal.history:
+            self.terminal_output.setPlainText(self.terminal.help_text())
 
     def write_intro(self):
         self.add("CYBERSHIELD AI", "Salom! Men CyberShield'ning terminal-darajadagi AI Security Intelligence qatlamiman. Tizim, jarayonlar, tarmoq, disklar, xizmatlar, scheduled tasklar va Defender holatini read-only rejimda tekshiraman; real security evidence'ni tahlil qilaman va kerak bo‘lsa local LLM yoki web research yordamida javobni chuqurlashtiraman. Security actionlar esa alohida xavfsizlik policy'lari bilan boshqariladi.", "ai")
@@ -126,6 +131,30 @@ class AICopilot(QWidget):
         self.engine.history.clear()
         self.engine.memory.update({"last_target": None, "last_result": None, "last_topic": None, "last_answer": None})
         self.write_intro()
+
+    def run_terminal(self):
+        command = self.terminal_input.text().strip()
+        if not command:
+            return
+        self.terminal_input.clear()
+        self.terminal_output.append(f"\nCyberShield> {escape(command)}")
+        # Keep the UI responsive for real scans and host telemetry.
+        self.terminal_input.setEnabled(False)
+        def work():
+            return self.terminal.execute(command)
+        def done(result):
+            if result == "__CLEAR__":
+                self.terminal_output.clear()
+            else:
+                self.terminal_output.append(escape(str(result)).replace("\n", "<br>"))
+            self.terminal_input.setEnabled(True)
+            self.terminal_input.setFocus()
+        def failed(message):
+            self.terminal_output.append(f"ERROR: {escape(message)}")
+            self.terminal_input.setEnabled(True)
+            self.terminal_input.setFocus()
+        from app.ui.workers import start_worker
+        start_worker(self, work, done, failed)
 
     def pick_file(self):
         path, _ = QFileDialog.getOpenFileName(self, "CyberShield — Fayl tanlang", options=QFileDialog.Option.DontUseNativeDialog)

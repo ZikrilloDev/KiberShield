@@ -6,7 +6,6 @@ import re
 from urllib.parse import urlsplit
 
 from app.security.reputation import google_safe_browsing
-from app.security.enhanced_detection import url_signals
 
 SUSPICIOUS_WORDS = {
     "login", "signin", "verify", "verification", "password", "wallet", "bank",
@@ -150,13 +149,7 @@ def analyze_url(url: str) -> dict:
         reasons.append("URL path/query credential yoki payment lure saqlaydi")
 
     adv_score, adv_reasons = _advanced_signals(raw, u, host, path_query)
-    score += adv_score; reasons.extend(adv_reasons)
-    layered = url_signals(raw)
-    for sig in layered:
-        score += int(sig.get("score", 0))
-        reasons.append(str(sig.get("reason", sig.get("code", "signal"))))
-        evidence.append({"code": sig.get("code"), "severity": sig.get("severity", "medium"), "source": "CyberShield layered URL detector"})
-    reasons = list(dict.fromkeys(reasons))
+    score += adv_score; reasons.extend(adv_reasons); reasons = list(dict.fromkeys(reasons))
     reputation = google_safe_browsing(raw)
     if reputation.get("malicious"):
         score = 100

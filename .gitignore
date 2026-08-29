@@ -1,33 +1,23 @@
-# Python
 __pycache__/
-*.py[cod]
-.pytest_cache/
+*.pyc
 .venv/
 venv/
-
-# Secrets / environment
 .env
-.env.*
-!.env.example
-
-# Build artifacts
-build/
-dist/
-*.spec.bak
-.vercel/
-
-# Local CyberShield data
-data/*.db
 data/cybershield.db
 data/logs/*
 data/quarantine/*
 data/samples/*
-data/lab/*
-
-# IDE
 .vscode/
-.idea/
-
-# OS
-Thumbs.db
-.DS_Store
+build/
+dist/
+*.spec.bak
+.vercel
+.env
+__pycache__/
+*.pyc
+*.pyo
+data/*.db
+data/*.db-shm
+data/*.db-wal
+build/
+dist/

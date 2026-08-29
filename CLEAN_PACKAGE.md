@@ -5,7 +5,8 @@ Bu paket CyberShield'ning asosiy Windows Desktop/SOC variantini ajratib beradi.
 ## Kiritilgan
 - `main.py` — asosiy launcher (desktop/background/terminal)
 - `app/` — asosiy GUI, AI, scanner, phishing, sandbox, monitoring, quarantine va security modullari
-- `launch_cybershield.py` — desktop launcher
+- `background_service.py` — background protection
+- `launch_cybershield.py` — desktop/background launcher
 - EXE build fayllari va icon
 - dependency fayllari
 - `data/` — faqat bo'sh runtime kataloglari

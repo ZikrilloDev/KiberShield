@@ -180,6 +180,11 @@ COMMAND_SPECS: tuple[CommandSpec, ...] = (
     CommandSpec("net-accounts", "Read local account policy summary", "net-accounts", "windows"),
     CommandSpec("net-share", "Read configured Windows shares", "net-share", "windows"),
     CommandSpec("schtasks", "Read scheduled-task inventory", "schtasks", "monitoring"),
+    CommandSpec("dns-resolve", "Resolve a hostname to IP addresses", "dns-resolve <host>", "network"),
+    CommandSpec("port-check", "Check one TCP port with a short timeout", "port-check <host> <port>", "network"),
+    CommandSpec("listening-risk", "List local listening TCP sockets and owning processes", "listening-risk [limit]", "network"),
+    CommandSpec("security-baseline", "Summarize key Windows security controls", "security-baseline", "security"),
+    CommandSpec("process-network", "Correlate processes with their network connections", "process-network [limit]", "monitoring"),
 )
 
 # Windows read-only operator pack.  These are fixed argv wrappers around
@@ -1411,3 +1416,108 @@ def _safe_file_rows(target: str):
             try: rows.append({"path":str(p),"size":p.stat().st_size})
             except OSError: pass
     return rows
+
+
+# ---- Extended defensive network telemetry ---------------------------------
+
+def dns_resolve(host: str) -> dict[str, Any]:
+    host = str(host).strip()
+    if not host or len(host) > 253 or any(c in host for c in "\r\n\t"):
+        return {"ok": False, "error": "invalid host"}
+    try:
+        infos = socket.getaddrinfo(host, None, type=socket.SOCK_STREAM)
+        ips = sorted({x[4][0] for x in infos})
+        return {"ok": True, "host": host, "addresses": ips}
+    except socket.gaierror as exc:
+        return {"ok": False, "host": host, "error": str(exc)}
+
+def port_check(host: str, port: int, timeout: float = 1.2) -> dict[str, Any]:
+    host = str(host).strip()
+    port = int(port)
+    if not host or not 1 <= port <= 65535:
+        return {"ok": False, "error": "host/port out of range"}
+    started = time.monotonic()
+    try:
+        with socket.create_connection((host, port), timeout=max(0.2, min(timeout, 3.0))):
+            return {"ok": True, "host": host, "port": port, "state": "open",
+                    "elapsed_ms": round((time.monotonic()-started)*1000, 1)}
+    except socket.timeout:
+        return {"ok": True, "host": host, "port": port, "state": "timeout",
+                "elapsed_ms": round((time.monotonic()-started)*1000, 1)}
+    except OSError as exc:
+        return {"ok": True, "host": host, "port": port, "state": "closed_or_filtered",
+                "error": str(exc), "elapsed_ms": round((time.monotonic()-started)*1000, 1)}
+
+def listening_risk(limit: int = 50) -> dict[str, Any]:
+    limit = max(1, min(int(limit), 200))
+    if psutil is None:
+        return {"ok": False, "error": "psutil is not installed"}
+    rows = []
+    try:
+        for c in psutil.net_connections(kind="tcp"):
+            if c.status != "LISTEN":
+                continue
+            addr = c.laddr
+            pid = c.pid
+            name = None
+            try:
+                if pid:
+                    name = psutil.Process(pid).name()
+            except Exception:
+                pass
+            rows.append({"address": f"{getattr(addr,'ip','') or ''}:{getattr(addr,'port','') or ''}",
+                         "pid": pid, "process": name})
+        rows.sort(key=lambda x: (x["address"], x["pid"] or 0))
+        return {"ok": True, "count": len(rows), "listeners": rows[:limit]}
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}
+
+def security_baseline() -> dict[str, Any]:
+    result = {"ok": True, "platform": platform.platform()}
+    # Read-only checks.  We intentionally do not mutate Defender or Firewall.
+    if os.name == "nt":
+        try:
+            import subprocess
+            commands = [
+                ["powershell", "-NoProfile", "-Command",
+                 "Get-MpComputerStatus | Select-Object AMServiceEnabled,AntivirusEnabled,RealTimeProtectionEnabled | ConvertTo-Json -Compress"],
+                ["netsh", "advfirewall", "show", "allprofiles", "state"],
+            ]
+            out = []
+            for argv in commands:
+                try:
+                    p = subprocess.run(argv, capture_output=True, text=True, timeout=8,
+                                       shell=False, check=False)
+                    out.append({"tool": argv[0], "code": p.returncode,
+                                "output": (p.stdout or p.stderr)[-5000:]})
+                except Exception as exc:
+                    out.append({"tool": argv[0], "error": str(exc)})
+            result["checks"] = out
+        except Exception as exc:
+            result["checks_error"] = str(exc)
+    return result
+
+def process_network(limit: int = 50) -> dict[str, Any]:
+    limit = max(1, min(int(limit), 200))
+    if psutil is None:
+        return {"ok": False, "error": "psutil is not installed"}
+    rows = []
+    try:
+        for c in psutil.net_connections(kind="inet"):
+            pid = c.pid
+            if not pid:
+                continue
+            try:
+                name = psutil.Process(pid).name()
+            except Exception:
+                name = None
+            l = c.laddr
+            r = c.raddr
+            rows.append({
+                "pid": pid, "process": name, "status": c.status,
+                "local": f"{getattr(l,'ip','')}:{getattr(l,'port','')}" if l else None,
+                "remote": f"{getattr(r,'ip','')}:{getattr(r,'port','')}" if r else None,
+            })
+        return {"ok": True, "count": len(rows), "connections": rows[:limit]}
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}

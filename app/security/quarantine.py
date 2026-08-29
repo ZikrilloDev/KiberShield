@@ -13,12 +13,7 @@ def quarantine_file(path):
     QUARANTINE_DIR.mkdir(parents=True, exist_ok=True)
     digest = sha256_file(src)
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    base = QUARANTINE_DIR / f"{stamp}_{digest[:12]}_{src.name}"
-    dst = base
-    counter = 1
-    while dst.exists():
-        dst = QUARANTINE_DIR / f"{stamp}_{digest[:12]}_{counter}_{src.name}"
-        counter += 1
+    dst = QUARANTINE_DIR / f"{stamp}_{digest[:12]}_{src.name}"
     shutil.copy2(src, dst)
     copied_digest = sha256_file(dst)
     if copied_digest != digest:
@@ -35,15 +30,3 @@ def quarantine_file(path):
     }
     (dst.with_suffix(dst.suffix + ".json")).write_text(json.dumps(metadata, indent=2), encoding="utf-8")
     return dst
-
-
-class Quarantine:
-    """Compatibility facade for the reversible quarantine service.
-
-    The implementation remains evidence-preserving and never executes a sample.
-    """
-    def quarantine(self, path):
-        return quarantine_file(path)
-
-    def quarantine_file(self, path):
-        return quarantine_file(path)
